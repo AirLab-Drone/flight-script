@@ -1,6 +1,6 @@
 import time
-from dronekit import Vehicle, connect
-
+from dronekit import Vehicle, connect, VehicleMode
+import info
 
 class RawIMU(object):
     """
@@ -80,18 +80,21 @@ class MyVehicle(Vehicle):
         return self._raw_imu
     
 if __name__ == "__main__":
-    connection_string = "127.0.0.1:14550"
+    connection_string = "/dev/tty.usbserial-D30GLXI0"
+    baud = 57600
+    # connection_string = "127.0.0.1:14550"
     def raw_imu_callback(self, attr_name, value):
-    # attr_name == 'raw_imu'
-    # value == vehicle.raw_imu
         print(value)
 
     # Connect to the Vehicle
     print('Connecting to vehicle on: %s' % connection_string)
-    vehicle = connect(connection_string, wait_ready=True, vehicle_class=MyVehicle)
+    vehicle = connect(connection_string, wait_ready=True, vehicle_class=MyVehicle, baud=baud)
+    info.connectCheck(vehicle)
     vehicle.add_attribute_listener('raw_imu', raw_imu_callback)
+    vehicle.mode = VehicleMode("GUIDED_NOGPS")
     print('Display RAW_IMU messages for 5 seconds and then exit.')
     time.sleep(5)
+
 
     #The message listener can be unset using ``vehicle.remove_message_listener``
 
