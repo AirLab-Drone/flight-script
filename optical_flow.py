@@ -87,4 +87,8 @@ while(1):
 
     # Now update the previous frame and previous points
     old_gray = frame_gray.copy()
-    p0 = good_new.reshape(-1, 1, 2)
+    if(len(good_new)<=1): 
+        p0 = cv.goodFeaturesToTrack(old_gray, mask = None, **feature_params)
+    else:
+        p0 = good_new.reshape(-1, 1, 2)
+
