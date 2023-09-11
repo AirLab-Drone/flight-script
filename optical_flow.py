@@ -22,6 +22,7 @@ def send_optical_data_dronekit(x_flow_pixels, y_flow_pixels):
 
     # 发送光流消息
     vehicle.send_mavlink(msg)
+
 vehicle = connect('/dev/ttyACM0',baud=9600)
 cap = cv.VideoCapture(0)
 
@@ -62,7 +63,8 @@ while(1):
     if p1 is not None:
         good_new = p1[st==1]
         good_old = p0[st==1]
-
+    if(len(good_new) == 0):
+        continue
     # draw the tracks
     mean_x = 0
     mean_y = 0
