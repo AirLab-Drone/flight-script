@@ -1,6 +1,6 @@
 import serial
 import time
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 def sensor(H,L):
     Dis = int(H)*256 + int(L)
@@ -18,7 +18,7 @@ def readus(port1):
     port1.write(command)
     time.sleep(0.25)
     rcv1 = port1.read(1)
-    #print(rcv)
+    print(rcv1)
     head = ord(rcv1)
     #print(head)
     if(head == 85):
@@ -46,14 +46,14 @@ def readus(port1):
 
 
 if __name__ == '__main__':
-    port1 = serial.Serial("COM7", baudrate = 9600, timeout = 2)
-    plt.ion() #开启interactive mode 成功的关键函数
-    plt.figure(1)
+    port1 = serial.Serial("/dev/ttyS0", baudrate = 9600, timeout = 2)
+    # plt.ion() #开启interactive mode 成功的关键函数
+    # plt.figure(1)
     t = []
     t_now = 0
     ds=[ds1,ds2,ds3,ds4] = [[],[],[],[]]
     i=0
-    plt.clf()#清空画布上的所有内容
+    # plt.clf()#清空画布上的所有内容
     for i in range(0,40):
         #print(readus(port1))
         s1,s2,s3,s4 = readus(port1)
@@ -64,26 +64,26 @@ if __name__ == '__main__':
         ds2.append(s2)
         ds3.append(s3)
         ds4.append(s4)
-        plt.figure(1)
-        for i in range(1,5):
-            plt.subplot(2, 4, i)
-            plt.title("fs"+str(i))
-            plt.ylim(250,4500)
-            plt.ylabel('(mm)')
-            plt.xlabel('                time')
-            plt.plot(t,ds[i-1],'-r')
+        # plt.figure(1)
+        # for i in range(1,5):
+        #     plt.subplot(2, 4, i)
+        #     plt.title("fs"+str(i))
+        #     plt.ylim(250,4500)
+        #     plt.ylabel('(mm)')
+        #     plt.xlabel('                time')
+        #     plt.plot(t,ds[i-1],'-r')
         #plt.figure(2)
-        for i in range(5,9):
-            plt.subplot(2, 4, i)
-            plt.title("bs"+str(i-4))
-            plt.ylim(250,4500)
-            plt.ylabel('(mm)')
-            plt.xlabel('time')
-            plt.plot(t,ds[i-1],'-b')
-        plt.pause(0.01)
+    #     for i in range(5,9):
+    #         plt.subplot(2, 4, i)
+    #         plt.title("bs"+str(i-4))
+    #         plt.ylim(250,4500)
+    #         plt.ylabel('(mm)')
+    #         plt.xlabel('time')
+    #         plt.plot(t,ds[i-1],'-b')
+    #     plt.pause(0.01)
 
-    plt.savefig('senor1.png')#儲存圖片
-    plt.show()
+    # plt.savefig('senor1.png')#儲存圖片
+    # plt.show()
 
 
 
