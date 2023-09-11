@@ -16,8 +16,9 @@ def readus(port1):
     command = bytearray(command)
     # while 1 :
     port1.write(command)
-    time.sleep(0.25)
+    time.sleep(0.5)
     rcv1 = port1.read(1)
+    time.sleep(0.5)
     print(rcv1)
     head = ord(rcv1)
     #print(head)
@@ -46,9 +47,10 @@ def readus(port1):
 
 
 if __name__ == '__main__':
-    port1 = serial.Serial("/dev/ttyS0", baudrate = 9600, timeout = 2)
-    # plt.ion() #开启interactive mode 成功的关键函数
-    # plt.figure(1)
+    print('hello')
+    port1 = serial.Serial("/dev/tty.usbserial-W2100850", baudrate = 9600, timeout = 2)
+    plt.ion() #开启interactive mode 成功的关键函数
+    plt.figure(1)
     t = []
     t_now = 0
     ds=[ds1,ds2,ds3,ds4] = [[],[],[],[]]
@@ -73,14 +75,14 @@ if __name__ == '__main__':
         #     plt.xlabel('                time')
         #     plt.plot(t,ds[i-1],'-r')
         #plt.figure(2)
-    #     for i in range(5,9):
-    #         plt.subplot(2, 4, i)
-    #         plt.title("bs"+str(i-4))
-    #         plt.ylim(250,4500)
-    #         plt.ylabel('(mm)')
-    #         plt.xlabel('time')
-    #         plt.plot(t,ds[i-1],'-b')
-    #     plt.pause(0.01)
+        # for i in range(5,9):
+        #     plt.subplot(2, 4, i)
+        #     plt.title("bs"+str(i-4))
+        #     plt.ylim(250,4500)
+        #     plt.ylabel('(mm)')
+        #     plt.xlabel('time')
+        #     plt.plot(t,ds[i-1],'-b')
+        plt.pause(0.01)
 
     # plt.savefig('senor1.png')#儲存圖片
     # plt.show()
