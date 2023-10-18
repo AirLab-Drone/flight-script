@@ -1,3 +1,5 @@
+from pymavlink import mavutil
+import time
 def send_global_velocity(vehicle, velocity_x, velocity_y, velocity_z, duration):
     """
     Move vehicle in direction based on specified velocity vectors.
