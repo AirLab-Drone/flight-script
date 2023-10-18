@@ -18,11 +18,20 @@ def speed_info():
 
 if __name__ == "__main__":
     vehicle = connect("/dev/tty.usbserial-D30GLXI0", wait_ready=False, baud=57600)
-    vehicle.mode = VehicleMode("GUIDED")
-    vehicle.parameters['EK2_ENABLE'] = 1
-    vehicle.home_location = LocationGlobal(0, 0, 0)
+    vehicle.mode = VehicleMode("LOITER")
+    # vehicle.parameters['EK2_ENABLE'] = 1
+    # vehicle.home_location = LocationGlobal(0, 0, 0)
     info.connectCheck(vehicle)
     # vehicle.arm()
     while True:
-        print("location: " + str(vehicle.location.local_frame))
-        time.sleep(0.5)
+        dir = input("Enter direction: ")
+        if dir == "w":
+            send_global_velocity(vehicle, 0, 1, 0, 1)
+        elif dir == "s":
+            send_global_velocity(vehicle, 0, -1, 0, 1)
+        elif dir == "a":
+            send_global_velocity(vehicle, -1, 0, 0, 1)
+        elif dir == "d":
+            send_global_velocity(vehicle, 1, 0, 0, 1)
+        elif dir == "q":
+            break
