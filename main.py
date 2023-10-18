@@ -29,13 +29,13 @@ if __name__ == "__main__":
     while True:
         dir = input("Enter direction: ")
         if dir == "w":
-            base_flight.send_global_velocity(vehicle, 0, 1, 0, 1)
+            send_body_ned_velocity(vehicle, 0, 1, 0, 1)
         elif dir == "s":
-            base_flight.send_global_velocity(vehicle, 0, -1, 0, 1)
+            send_body_ned_velocity(vehicle, 0, -1, 0, 1)
         elif dir == "a":
-            base_flight.send_global_velocity(vehicle, -1, 0, 0, 1)
+            send_body_ned_velocity(vehicle, -1, 0, 0, 1)
         elif dir == "d":
-            base_flight.send_global_velocity(vehicle, 1, 0, 0, 1)
+            send_body_ned_velocity(vehicle, 1, 0, 0, 1)
         elif dir == "q":
             break
     vehicle.mode = VehicleMode("LAND")
