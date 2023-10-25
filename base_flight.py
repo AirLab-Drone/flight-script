@@ -19,7 +19,7 @@ def send_global_velocity(vehicle, velocity_x, velocity_y, velocity_z, duration):
         0, 0, 0, # afx, afy, afz acceleration (not supported yet, ignored in GCS_Mavlink)
         0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
         
-def send_body_ned_velocity(velocity_x, velocity_y, velocity_z, duration=0):
+def send_body_ned_velocity(vehicle, velocity_x, velocity_y, velocity_z, duration=0):
     msg = vehicle.message_factory.set_position_target_local_ned_encode(
         0,       # time_boot_ms (not used)
         0, 0,    # target system, target component
