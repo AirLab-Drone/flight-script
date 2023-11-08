@@ -21,7 +21,7 @@ if __name__ == "__main__":
     vehicle = connect("127.0.0.1:14550", wait_ready=False, baud=57600)
     vehicle.mode = VehicleMode("GUIDED")
     # vehicle.parameters['EK2_ENABLE'] = 1
-    # vehicle.home_location = LocationGlobal(0, 0, 0)
+    vehicle.home_location = LocationGlobal(0, 0, 0)
     info.connectCheck(vehicle)
     high = input("take off high: ")
     vehicle.arm()
