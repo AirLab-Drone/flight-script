@@ -1,13 +1,7 @@
-import rclpy
-
+import cv2
 class Visual:
     def __init__(self) -> None:
-        self.node = rclpy.Node("visual")
-
-    def destroy(self):
-        self.node.destroy_node()
-        rclpy.shutdown()
-
+        pass
     def getImage(self):
         pass
 
