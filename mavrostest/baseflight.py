@@ -9,6 +9,9 @@ from mavros_msgs.msg import Waypoint
 from mavros_msgs.msg import WaypointList, PositionTarget
 import flight_control
 
+def wait(controller):
+    controller.setZeroVelocity()
+    time.sleep(3)
 
 def main():
     rclpy.init()
@@ -18,9 +21,17 @@ def main():
     while(isTakeoffSuccess == False):
         isTakeoffSuccess = flightController.armAndTakeoff()
     threading.Thread(target=flightController.initTimer).start()
-    flightController.setVelocity(-0.5, -0.5, 0.0)
-    print(f'Velocity: {flightController.msg.velocity}')
-    time.sleep(10)
+    flightController.setVelocity(0.5, 0.0, 0.0)
+    time.sleep(2)
+    wait(flightController)
+    flightController.setVelocity(-0.5, 0.0, 0.0)
+    time.sleep(2)
+    wait(flightController)
+    flightController.setVelocity(0.0, 0.5, 0.0)
+    time.sleep(2)
+    wait(flightController)
+    flightController.setVelocity(0.0, -0.5, 0.0)
+    time.sleep(2)
     flightController.setZeroVelocity()
     flightController.land()
     flightController.destroy()

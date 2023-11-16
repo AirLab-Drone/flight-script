@@ -37,9 +37,14 @@ class FlightControl:
         return msg_obj
     
     def setVelocity(self, x, y, z):
-        self.msg.velocity.x = x
-        self.msg.velocity.y = y
-        self.msg.velocity.z = z
+        '''
+        @param x: x-axis velocity in m/s
+        @param y: y-axis velocity in m/s
+        @param z: z-axis velocity in m/s
+        '''
+        self.msg.velocity.x = float(x) * 2.0
+        self.msg.velocity.y = float(y) * 2.0
+        self.msg.velocity.z = float(z) * 2.0
 
     def setZeroVelocity(self):
         self.msg.velocity.x = 0.0
