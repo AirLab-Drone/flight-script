@@ -3,44 +3,8 @@ import datetime
 import numpy as np
 import json
 import math
-# class Visual:
-#     image = None
-#     mtx = np.array([[776.31000562, 0, 327.96638128], [0, 775.07173891, 179.57551958], [0, 0, 1]])
-#     dist = np.array([[8.29378271e-02, 1.26989092e-01, 3.86532147e-03, 1.18462078e-03, -1.87627090e+00]])
-        
-#     def __init__(self) -> None:
-#         self.cap = cv2.VideoCapture(0)
-#         pass
-#     def cameraCalibration(self, image):
-#         h,  w = image.shape[:2]
-#         newcameramtx, roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w,h), 1, (w,h))
-#         # undistort
-#         mapx, mapy = cv2.initUndistortRectifyMap(self.mtx, self.dist, None, newcameramtx, (w,h), 5)
-#         dst = cv2.remap(img, mapx, mapy, cv2.INTER_LINEAR)
-#         # crop the image
-#         x, y, w, h = roi
-#         dst = dst[y:y+h, x:x+w]
-#         return dst
-
-#     def getImage(self):
-#         if self.cap.isOpened():
-#             ret, frame = self.cap.read()
-#             self.image = frame
-#             return frame
-
-#     def arucoDetect(self) :
-#         '''
-#         @return: list([id, x, y, z, yaw, pitch, roll]) or None, return a list of aruco marker detected, each element is a list of [id, x, y, z, yaw, pitch, roll]
-#         '''
-
-#         pass
-
-#     def getArucoPositionById(self, id):
-#         '''
-#         @param id: int, the id of the aruco marker
-#         @return: [x, y, z, yaw, pitch, roll] or None, return the position of the aruco marker, [x, y, z, yaw, pitch, roll] is a list of float
-#         '''
-#         pass
+import os
+import threading
 
 class LimitedList:
     def __init__(self, initial_size=20):
@@ -144,70 +108,73 @@ class Aruco:
     def drawAruco(self, frame):
         frame = cv2.drawFrameAxes(frame, self.mtx,self.dist,self.rvec,self.tvec, 0.05)
         return frame
-def addNewAruco(id,corner,arucoList):
-    for aruco in arucoList:
-        if aruco.id == id:
-            return False
-    aruco = Aruco(id)
-    aruco.update(id,corner)
-    arucoList.append(aruco)
-def draw(x, y, z, yaw, id, frame, image_y):
-    text = 'id: {}, x: {:.2f}, y: {:.2f}, z: {:.2f}, yaw: {:.2f}'.format(id, x, y, z, yaw)
-    cv2.putText(frame, text, (20,image_y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
-def main():
-    #-----------------setting-----------------
-    outVedio = False
-    drawText = False
-    showImage = False
-    drawAruco = False
-    #-----------------init-----------------
-    cap = cv2.VideoCapture(0)
-    # mc = memcache.Client(['127.0.0.1:11211'], debug=True)
-    # if(not cap.isOpened()):
-    #     print("Cannot open camera")
-    #     exit()
+class ArucoDetector:
+    # #-----------------setting-----------------
+    # OUTVEDIO = False
+    # DRAWTEXT = True
+    # SHOWIMAGE = False
+    # DRAWARUCO = True
+    is_running = True
+    def __init__(self):
+        self.cap = cv2.VideoCapture(0)
+        self.arucoList = []
+        self.count = 0
+        self.start_time = cv2.getTickCount()
+        #-----------------output vedio-----------------
+        # if(self.OUTVEDIO):
+        #     outputvediofolder = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+        #     fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+        #     if(not os.path.exists('output_vedio/')):
+        #         os.makedirs('output_vedio/')
+        #     self.out = cv2.VideoWriter('output_vedio/'+outputvediofolder+'.mp4', fourcc, 20.0, (640,  480))
+        # ------------------------------- start detect ------------------------------- #
+        aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_50)
+        aruco_params = cv2.aruco.DetectorParameters()
+        self.detector = cv2.aruco.ArucoDetector(aruco_dict, aruco_params)
+        rec, self.frame = self.cap.read()
+        self.thread = threading.Thread(target=self.run)
+        self.thread.start()
+    
+    def run(self):
+        while self.is_running:
+            ret, self.frame = self.cap.read()
+            #-----------------find aruco-----------------
+            if self.frame is None:
+                continue
+            (corners, ids, rejected) = self.detector.detectMarkers(self.frame)
+            self.frame = cv2.aruco.drawDetectedMarkers(self.frame, corners, ids, (0,255,0))
 
-    arucoList = []
-    count = 0
-    start_time = cv2.getTickCount()
+            if len(corners) > 0:
+                for i in range(len(ids)):
+                    self.addNewAruco(ids[i][0],corners[i])
+            for aruco in self.arucoList:
+                if aruco.checkInList(ids) and len(corners) > 0:
+                    id = aruco.id
+                    aruco.update(id,corners[np.where(ids == aruco.id)[0][0]])
+            self.debug()
+    def stop(self):
+        self.is_running = False
+        self.cap.release()
+        if self.OUTVEDIO:
+            self.out.release()
+        cv2.destroyAllWindows()
+    def debug(self):
+        #-------------print fps-----------------
+        self.count += 1
+        if(self.count%30 == 0):
+            end_time = cv2.getTickCount()
+            print('FPS: ', 30/((end_time - self.start_time)/cv2.getTickFrequency()))
+            # for aruco in arucoList:
+            #     print(aruco.id,aruco.getCoordinate())
+            self.start_time = cv2.getTickCount()
 
-    #-----------------output vedio-----------------
-    if(outVedio):
-        outputvediofolder = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
-        fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-        if(not os.path.exists('output_vedio/')):
-            os.makedirs('output_vedio/')
-        out = cv2.VideoWriter('output_vedio/'+outputvediofolder+'.mp4', fourcc, 20.0, (640,  480))
-
-    while True:
-        ret, frame = cap.read()
-
-        #-----------------find aruco-----------------
-        arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_50)
-        arucoParams = cv2.aruco.DetectorParameters()
-        detector = cv2.aruco.ArucoDetector(arucoDict, arucoParams)
-        (corners, ids, rejected) = detector.detectMarkers(frame)
-        frame = cv2.aruco.drawDetectedMarkers(frame, corners, ids, (0,255,0))
-
-        if len(corners) > 0:
-            for i in range(len(ids)):
-                addNewAruco(ids[i][0],corners[i],arucoList)
-        for aruco in arucoList:
-            if aruco.checkInList(ids) and len(corners) > 0:
-                id = aruco.id
-                aruco.update(id,corners[np.where(ids == aruco.id)[0][0]])
-
+    def closestAruco(self):
         send_data = []
         closest_aruco = None
-        for aruco in arucoList:
+        for aruco in self.arucoList:
             id = aruco.id
             x,y,z,yaw,pitch,roll = aruco.getCoordinate()
-            if(drawAruco==True):
-                frame = aruco.drawAruco(frame)
-            if(drawText):
-                draw(x,y,z,yaw,id,frame,(id-24)*25) #draw aruco
-                # save_aruco2csv.savetocsv(id,x,y,z,yaw,frame, False)
             if(x == None or y == None or z == None or yaw == None or pitch == None or roll == None):
                 continue
             if(math.isnan(x) or math.isnan(y) or math.isnan(z) or math.isnan(yaw) or math.isnan(pitch) or math.isnan(roll)):
@@ -235,24 +202,25 @@ def main():
             send_data_json = json.dumps(send_data)
         else:
             send_data_json = json.dumps([send_data[0]])
-        print(send_data_json)
-        
-        #-------------print fps-----------------
-        count += 1
-        if(count%30 == 0):
-            end_time = cv2.getTickCount()
-            print('FPS: ', 30/((end_time - start_time)/cv2.getTickFrequency()))
-            for aruco in arucoList:
-                print(aruco.id,aruco.getCoordinate())
-            start_time = cv2.getTickCount()
-        #-------------show frame-----------------
-        if(showImage):
-            cv2.imshow('frame', frame)
-        if cv2.waitKey(1) == ord('q'):
-            break
-        #-------------store vedio-----------------
-        if(outVedio):
-            out.write(frame)
+        # print(send_data_json)
+
+    def addNewAruco(self, id, corner):
+        for aruco in self.arucoList:
+            if aruco.id == id:
+                return False
+        aruco = Aruco(id)
+        aruco.update(id,corner)
+        self.arucoList.append(aruco)
+    def draw(self, x, y, z, yaw, id, frame, image_y):
+        text = 'id: {}, x: {:.2f}, y: {:.2f}, z: {:.2f}, yaw: {:.2f}'.format(id, x, y, z, yaw)
+        cv2.putText(frame, text, (20,image_y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
 if __name__ == '__main__':
-    main()
+    aruco_detector = ArucoDetector()
+    while True:
+        if aruco_detector.frame is None:
+            continue
+        cv2.imshow('frame', aruco_detector.frame)
+        if cv2.waitKey(1) == ord('q'):
+            aruco_detector.stop()
+            break
