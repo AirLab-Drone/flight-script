@@ -156,8 +156,6 @@ class ArucoDetector:
     def stop(self):
         self.is_running = False
         self.cap.release()
-        if self.OUTVEDIO:
-            self.out.release()
         cv2.destroyAllWindows()
     def debug(self):
         #-------------print fps-----------------

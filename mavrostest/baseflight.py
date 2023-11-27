@@ -33,6 +33,5 @@ def main():
         isLandSuccess = flightController.land()
     flightController.destroy()
 
-
 if __name__ == '__main__':
     main()

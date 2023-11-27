@@ -23,6 +23,13 @@ class FlightControl:
     #         pass
     
     def simpleFlight(self,x,y,z,duration):
+        '''
+        @param x: x-axis velocity in m/s
+        @param y: y-axis velocity in m/s
+        @param z: z-axis velocity in m/s
+        @param duration: duration in second
+        使無人機飛行x,y,z軸的速度，單位為m/s，持續duration秒。
+        '''
         start_time = time.time()
         while(time.time() - start_time < duration):
             self.sendPositionTarget(x,y,z)
@@ -33,6 +40,7 @@ class FlightControl:
         @param x: x-axis velocity in m/s
         @param y: y-axis velocity in m/s
         @param z: z-axis velocity in m/s
+        傳送x,y,z軸的速度給飛控，單位為m/s。
         '''
         self.msg.velocity.x = float(x)
         self.msg.velocity.y = float(y)
@@ -40,6 +48,10 @@ class FlightControl:
         print(f'x: {self.msg.velocity.x}, y: {self.msg.velocity.y}, z: {self.msg.velocity.z}')
         self.publisher.publish(self.msg)
     def setInitPositionTarget(self):
+        '''
+        @return: mavros_msgs.msg.PositionTarget
+        設定PositionTarget的初始值，定義飛行加速度與起始速度0。
+        '''
         msg_obj = PositionTarget()
         msg_obj.coordinate_frame = 8
         msg_obj.type_mask = 128
@@ -56,20 +68,15 @@ class FlightControl:
         msg_obj.yaw_rate = 0.0
         return msg_obj
     
-    # def setVelocity(self, x, y, z):
-    #     '''
-    #     @param x: x-axis velocity in m/s
-    #     @param y: y-axis velocity in m/s
-    #     @param z: z-axis velocity in m/s
-    #     '''
-    #     self.msg.velocity.x = float(x) * 2.0
-    #     self.msg.velocity.y = float(y) * 2.0
-    #     self.msg.velocity.z = float(z) * 2.0
-
     def setZeroVelocity(self):
+        '''使無人機速度歸零，懸停於空中。'''
         self.sendPositionTarget(0,0,0)
 
-    def armAndTakeoff(self):
+    def armAndTakeoff(self, alt=1.2):
+        '''
+        @param alt: altitude in meter
+        啟動馬達並起飛。
+        '''
         print("armAndTakeoff")
         set_mode_client = self.node.create_client(SetMode, '/mavros/set_mode')
         arming_client = self.node.create_client(CommandBool, '/mavros/cmd/arming')
@@ -77,7 +84,7 @@ class FlightControl:
 
         set_mode_request = SetMode.Request(base_mode=0, custom_mode='4')
         arming_request = CommandBool.Request(value=True)
-        takeoff_request = CommandTOL.Request(altitude=5.0)
+        takeoff_request = CommandTOL.Request(altitude=alt)
 
         future_set_mode = set_mode_client.call_async(set_mode_request)
         print("future_set_mode")
