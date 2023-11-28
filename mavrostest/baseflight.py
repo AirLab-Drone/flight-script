@@ -8,12 +8,13 @@ from mavros_msgs.srv import WaypointPush
 from mavros_msgs.msg import Waypoint
 from mavros_msgs.msg import WaypointList, PositionTarget
 import flight_control
+from mission import Mission
 
 def wait(controller):
     controller.setZeroVelocity()
     time.sleep(5)
 
-def main():
+def velocityTest():
     rclpy.init()
     flightController = flight_control.FlightControl()
     time.sleep(5)
@@ -32,6 +33,15 @@ def main():
     while(isLandSuccess == False):
         isLandSuccess = flightController.land()
     flightController.destroy()
-
+def arucoLandingTest():
+    rclpy.init()
+    flightController = flight_control.FlightControl()
+    time.sleep(5)
+    isTakeoffSuccess = False
+    while(isTakeoffSuccess == False):
+        isTakeoffSuccess = flightController.armAndTakeoff()
+    mission = Mission(flightController)
+    mission.landedOnPlatform()
+    flightController.destroy()
 if __name__ == '__main__':
-    main()
+    arucoLandingTest()

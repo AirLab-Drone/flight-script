@@ -132,3 +132,9 @@ class FlightControl:
     def destroy(self):
         self.node.destroy_node()
         rclpy.shutdown()
+
+if __name__ == "__main__":
+    rclpy.init()
+    controler = FlightControl()
+    print(controler.land())
+    controler.destroy()

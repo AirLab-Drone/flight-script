@@ -152,7 +152,7 @@ class ArucoDetector:
                 if aruco.checkInList(ids) and len(corners) > 0:
                     id = aruco.id
                     aruco.update(id,corners[np.where(ids == aruco.id)[0][0]])
-            self.debug()
+            # self.debug()
     def stop(self):
         self.is_running = False
         self.cap.release()
@@ -167,8 +167,7 @@ class ArucoDetector:
             #     print(aruco.id,aruco.getCoordinate())
             self.start_time = cv2.getTickCount()
 
-    def closestAruco(self):
-        send_data = []
+    def closestAruco(self) ->Aruco | None:
         closest_aruco = None
         for aruco in self.arucoList:
             id = aruco.id
@@ -177,30 +176,14 @@ class ArucoDetector:
                 continue
             if(math.isnan(x) or math.isnan(y) or math.isnan(z) or math.isnan(yaw) or math.isnan(pitch) or math.isnan(roll)):
                 continue
-            json_data = {
-                'id':int(id),
-                'x':format(x,'.2f'),
-                'y':format(y,'.2f'),
-                'z':format(z,'.2f'),
-                'yaw':format(yaw,'.2f'),
-                'pitch':format(pitch,'.2f'),
-                'roll':format(roll,'.2f')
-            }
             if(closest_aruco == None):
-                closest_aruco = json_data
+                closest_aruco = aruco
             else:
                 aruco_distance = math.sqrt(math.pow(x,2)+math.pow(y,2))
-                closest_aruco_distance = math.sqrt(math.pow(float(closest_aruco['x']),2)+math.pow(float(closest_aruco['y']),2))
+                closest_aruco_distance = math.sqrt(math.pow(float(closest_aruco.getCoordinate()[0]),2)+math.pow(float(closest_aruco.getCoordinate()[1]),2))
                 if(aruco_distance < closest_aruco_distance):
-                    closest_aruco = json_data
-            send_data.append(json_data)
-        if(closest_aruco != None):
-            send_data.append(closest_aruco)
-        if(len(send_data) == 0):
-            send_data_json = json.dumps(send_data)
-        else:
-            send_data_json = json.dumps([send_data[0]])
-        # print(send_data_json)
+                    closest_aruco = aruco
+        return closest_aruco 
 
     def addNewAruco(self, id, corner):
         for aruco in self.arucoList:
@@ -216,9 +199,6 @@ class ArucoDetector:
 if __name__ == '__main__':
     aruco_detector = ArucoDetector()
     while True:
-        if aruco_detector.frame is None:
-            continue
-        cv2.imshow('frame', aruco_detector.frame)
-        if cv2.waitKey(1) == ord('q'):
-            aruco_detector.stop()
-            break
+        aruco = aruco_detector.closestAruco()
+        if aruco != None:
+            print(aruco.getCoordinate())
