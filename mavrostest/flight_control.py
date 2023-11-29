@@ -117,7 +117,30 @@ class FlightControl:
         if(future_takeoff.result().success == False):
             return False
         return True
-
+    def setMode(self, mode:str='4'):
+        set_mode_client = self.node.create_client(SetMode, '/mavros/set_mode')
+        set_mode_request = SetMode.Request(base_mode=0, custom_mode=mode)
+        future_set_mode = set_mode_client.call_async(set_mode_request)
+        rclpy.spin_until_future_complete(self.node, future_set_mode)
+        print(future_set_mode.result())
+        if(future_set_mode.result() == None):
+            return False
+        if(future_set_mode.result().mode_sent == False):
+            return False
+        return True
+    
+    def armed(self):
+        arming_client = self.node.create_client(CommandBool, '/mavros/cmd/arming')
+        arming_request = CommandBool.Request(value=True)
+        future_arming = arming_client.call_async(arming_request)
+        rclpy.spin_until_future_complete(self.node, future_arming)
+        print(future_arming.result())
+        if(future_arming.result() == None):
+            return False
+        if(future_arming.result().success == False):
+            return False
+        return True
+    
     def land(self):
         land_client = self.node.create_client(CommandTOL, '/mavros/cmd/land')
         land_request = CommandTOL.Request()
@@ -136,5 +159,7 @@ class FlightControl:
 if __name__ == "__main__":
     rclpy.init()
     controler = FlightControl()
-    print(controler.land())
+    print(controler.armed())
+    time.sleep(5)
+    print('land: ',controler.land())
     controler.destroy()
