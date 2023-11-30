@@ -31,10 +31,13 @@ def velocityTest():
 def arucoLandingTest():
     rclpy.init()
     node = rclpy.create_node("flight_control")
-    flightController = flight_control.FlightControl(node)
+    controller = flight_control.FlightControl(node)
+    flight_info = flight_control.FlightInfo(node)
+    while not controller.armAndTakeoff():
+        print("armAndTakeoff fail")
     time.sleep(5)
-    mission = Mission(flightController)
+    mission = Mission(controller,flight_info)
     mission.landedOnPlatform()
-    flightController.destroy()
+    controller.destroy()
 if __name__ == '__main__':
     arucoLandingTest()

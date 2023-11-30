@@ -73,6 +73,9 @@ class Aruco:
         self.roll_list.add_element(math.degrees(roll))
         return self.getCoordinate()
     def getCoordinate(self):
+        '''
+        @return: x,y,z,yaw,pitch,roll
+        '''
         if(self.checkStd() == False):
             return None,None,None,None,None,None
         x = self.x_list.calculate_median()

@@ -1,4 +1,3 @@
-import threading
 import time
 import rclpy
 from rclpy.node import Node
@@ -19,17 +18,6 @@ class FlightControl:
         )
         self.msg = self.setInitPositionTarget()
 
-    # def startTimer(self):
-    #     self.timer_tread = threading.Thread(target=self.newTimer)
-    #     self.timer_tread.start()
-    # def newTimer(self):
-    #     timer_period = 0.1 # 1 cycle per 0.1 second
-    #     self.timer = self.node.create_timer(timer_period, self.sendPositionTarget)
-    #     try:
-    #         rclpy.spin(self.node)
-    #     except KeyboardInterrupt:
-    #         pass
-
     def simpleFlight(self, x, y, z, duration):
         """
         @param x: x-axis velocity in m/s
@@ -40,22 +28,41 @@ class FlightControl:
         """
         start_time = time.time()
         while time.time() - start_time < duration:
-            self.sendPositionTarget(x, y, z)
+            self.sendPositionTargetVelocity(x, y, z)
             time.sleep(0.1)
-        self.sendPositionTarget(0, 0, 0)
+        self.sendPositionTargetVelocity(0, 0, 0)
 
-    def sendPositionTarget(self, x, y, z):
+    def sendPositionTargetVelocity(self, x, y, z, yaw_rate=0):
         """
-        @param x: x-axis velocity in m/s
-        @param y: y-axis velocity in m/s
-        @param z: z-axis velocity in m/s
+        @param x: x-axis velocity in m/s, positive for forward, negative for backward
+        @param y: y-axis velocity in m/s, positive for right, negative for left
+        @param z: z-axis velocity in m/s, positive for up, negative for down
+        @param yaw_rate:CANNOT WORKING, yaw rate in rad/s, positive for clockwise, negative for counterclockwise
         傳送x,y,z軸的速度給飛控，單位為m/s。
         """
         self.msg.velocity.x = float(x)
         self.msg.velocity.y = float(y)
         self.msg.velocity.z = float(z)
+        self.msg.yaw_rate = float(yaw_rate)
         print(
-            f"x: {self.msg.velocity.x}, y: {self.msg.velocity.y}, z: {self.msg.velocity.z}"
+            f"x: {self.msg.velocity.x}, y: {self.msg.velocity.y}, z: {self.msg.velocity.z}, yaw_rate: {self.msg.yaw_rate}"
+        )
+        self.publisher.publish(self.msg)
+    
+    def sendPositionTargetPosition(self, x, y, z, yaw=0):
+        """
+        @param x: x-axis position in m, positive for forward, negative for backward
+        @param y: y-axis position in m, positive for left, negative for right
+        @param z: z-axis position in m, positive for up, negative for down
+        @param yaw: yaw in rad, positive for clockwise, negative for counterclockwise
+        傳送x,y,z軸的位置給飛控，單位為m。
+        """
+        self.msg.position.x = float(x)
+        self.msg.position.y = float(y)
+        self.msg.position.z = float(z)
+        self.msg.yaw = float(yaw)
+        print(
+            f"x: {self.msg.position.x}, y: {self.msg.position.y}, z: {self.msg.position.z}, yaw: {self.msg.yaw}"
         )
         self.publisher.publish(self.msg)
 
@@ -82,7 +89,8 @@ class FlightControl:
 
     def setZeroVelocity(self):
         """使無人機速度歸零，懸停於空中。"""
-        self.sendPositionTarget(0, 0, 0)
+        msg = self.setInitPositionTarget()
+        self.publisher.publish(msg)
 
     def armAndTakeoff(self, alt=1.2):
         """
@@ -158,7 +166,7 @@ class FlightControl:
         land_client = self.node.create_client(CommandTOL, "/mavros/cmd/land")
         land_request = CommandTOL.Request()
         future_land = land_client.call_async(land_request)
-        rclpy.spin_until_future_complete(self.node, future_land)
+        rclpy.spin_until_future_complete(self.node, future_land, timeout_sec=5)
         if future_land.result() is None:
             return False
         if not future_land.result().success:
@@ -205,14 +213,11 @@ class FlightInfo:
 
 if __name__ == "__main__":
     rclpy.init()
-    # controler = FlightControl()
-    # while not controler.armAndTakeoff():
-    #     print("armAndTakeoff fail")
-    # input('press enter to continue')
-    # controler.land()
     node = rclpy.create_node("flight_control")
-    info = FlightInfo(node)
-    rclpy.spin(node)
-    while True:
-        print(info.rangefinder_alt)
-        time.sleep(0.1)
+    controler = FlightControl(node)
+    while not controler.armAndTakeoff():
+        print("armAndTakeoff fail")
+    controler.sendPositionTargetPosition(1,1,1)
+    time.sleep(5)
+    while not controler.land():
+        print("setZeroVelocity fail")
