@@ -48,7 +48,7 @@ class FlightControl:
             f"x: {self.msg.velocity.x}, y: {self.msg.velocity.y}, z: {self.msg.velocity.z}, yaw_rate: {self.msg.yaw_rate}"
         )
         self.publisher.publish(self.msg)
-    
+
     def sendPositionTargetPosition(self, x, y, z, yaw=0):
         """
         @param x: x-axis position in m, positive for forward, negative for backward
@@ -97,44 +97,11 @@ class FlightControl:
         @param alt: altitude in meter
         啟動馬達並起飛。
         """
-        print("armAndTakeoff")
-        set_mode_client = self.node.create_client(SetMode, "/mavros/set_mode")
-        arming_client = self.node.create_client(CommandBool, "/mavros/cmd/arming")
-        takeoff_client = self.node.create_client(CommandTOL, "/mavros/cmd/takeoff")
-
-        set_mode_request = SetMode.Request(base_mode=0, custom_mode="4")
-        arming_request = CommandBool.Request(value=True)
-        takeoff_request = CommandTOL.Request(altitude=alt)
-
-        future_set_mode = set_mode_client.call_async(set_mode_request)
-        print("future_set_mode")
-        time.sleep(5)
-        future_arming = arming_client.call_async(arming_request)
-        print("future_arming")
-        time.sleep(5)
-        future_takeoff = takeoff_client.call_async(takeoff_request)
-        print("future_takeoff")
-        time.sleep(6)
-
-        rclpy.spin_until_future_complete(self.node, future_set_mode, timeout_sec=5)
-        print(future_set_mode.result())
-        if future_set_mode.result() is None:
+        if not self.setMode():
             return False
-        if not future_set_mode.result().mode_sent:
+        if not self.armed():
             return False
-
-        rclpy.spin_until_future_complete(self.node, future_arming, timeout_sec=5)
-        print(future_arming.result())
-        if future_arming.result() is None:
-            return False
-        if not future_arming.result().success:
-            return False
-
-        rclpy.spin_until_future_complete(self.node, future_takeoff, timeout_sec=5)
-        print(future_takeoff.result())
-        if future_takeoff.result() is None:
-            return False
-        if not future_takeoff.result().success:
+        if not self.takeoff(alt):
             return False
         return True
 
@@ -142,24 +109,39 @@ class FlightControl:
         set_mode_client = self.node.create_client(SetMode, "/mavros/set_mode")
         set_mode_request = SetMode.Request(base_mode=0, custom_mode=mode)
         future_set_mode = set_mode_client.call_async(set_mode_request)
-        rclpy.spin_until_future_complete(self.node, future_set_mode)
+        rclpy.spin_until_future_complete(self.node, future_set_mode, timeout_sec=5)
         print(future_set_mode.result())
         if future_set_mode.result() is None:
             return False
         if not future_set_mode.result().mode_sent:
             return False
+        time.sleep(2)
         return True
 
     def armed(self):
         arming_client = self.node.create_client(CommandBool, "/mavros/cmd/arming")
         arming_request = CommandBool.Request(value=True)
         future_arming = arming_client.call_async(arming_request)
-        rclpy.spin_until_future_complete(self.node, future_arming)
+        rclpy.spin_until_future_complete(self.node, future_arming, timeout_sec=5)
         print(future_arming.result())
         if future_arming.result() is None:
             return False
         if not future_arming.result().success:
             return False
+        time.sleep(2)
+        return True
+
+    def takeoff(self, alt=1.2):
+        takeoff_client = self.node.create_client(CommandTOL, "/mavros/cmd/takeoff")
+        takeoff_request = CommandTOL.Request(altitude=alt)
+        future_takeoff = takeoff_client.call_async(takeoff_request)
+        rclpy.spin_until_future_complete(self.node, future_takeoff, timeout_sec=5)
+        print(future_takeoff.result())
+        if future_takeoff.result() is None:
+            return False
+        if not future_takeoff.result().success:
+            return False
+        time.sleep(6)
         return True
 
     def land(self):
@@ -167,6 +149,7 @@ class FlightControl:
         land_request = CommandTOL.Request()
         future_land = land_client.call_async(land_request)
         rclpy.spin_until_future_complete(self.node, future_land, timeout_sec=5)
+        print(future_land.result())
         if future_land.result() is None:
             return False
         if not future_land.result().success:
@@ -213,11 +196,11 @@ class FlightInfo:
 
 if __name__ == "__main__":
     rclpy.init()
-    node = rclpy.create_node("flight_control")
-    controler = FlightControl(node)
+    node_main = rclpy.create_node("flight_control")
+    controler = FlightControl(node_main)
     while not controler.armAndTakeoff():
         print("armAndTakeoff fail")
-    controler.sendPositionTargetPosition(1,1,1)
+    controler.sendPositionTargetPosition(1, 1, 1)
     time.sleep(5)
     while not controler.land():
         print("setZeroVelocity fail")

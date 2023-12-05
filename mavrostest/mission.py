@@ -41,6 +41,18 @@ class Mission:
     #         is_land_success = self.controller.land()
 
     def landedOnPlatform(self):
+        """
+        Function to control the drone to land on a platform using Aruco markers.
+
+        This function continuously checks the closest Aruco marker detected by the ArucoDetector.
+        It calculates the distance and orientation between the drone and the marker.
+        The drone moves towards the marker until the distance is less than 0.1 meters.
+        If the drone's altitude is lower than the specified lowest_high value, it moves down towards the platform.
+        Once the drone has landed on the platform, it stops moving and lands completely.
+
+        Returns:
+            None
+        """
         lowest_high = 0.3  # 最低可看到aruco的高度 單位:公尺
         max_distance = 0.2
         max_yaw = 0.174  # 10度
