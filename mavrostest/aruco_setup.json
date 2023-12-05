@@ -1,0 +1,16 @@
+{
+    "25":{
+        "markerLength": 0.05,
+        "coordinate": {
+            "x": 0,
+            "y": 0
+        }
+    },
+    "0":{
+        "markerLength": 0.15,
+        "coordinate": {
+            "x": -0.15,
+            "y": 0
+        }
+    }
+}

@@ -3,6 +3,7 @@ import time
 import rclpy
 from visual import ArucoDetector
 from flight_control import FlightControl, FlightInfo
+import json
 
 
 class Mission:
@@ -56,7 +57,9 @@ class Mission:
         lowest_high = 0.3  # 最低可看到aruco的高度 單位:公尺
         max_distance = 0.2
         max_yaw = 0.174  # 10度
-        downWard_distance = -0.2  #
+        downward_distance = -0.2  #
+        with open("aruco_setup.json", "r", encoding='utf-8') as f:
+            aruco_setup = json.load(f)
         aruco_detector = ArucoDetector()
         while True:
             rclpy.spin_once(self.flight_info.node)
@@ -64,14 +67,17 @@ class Mission:
             if closest_aruco is None:
                 self.controller.setZeroVelocity()
                 continue
+            id = closest_aruco.id
             x, y, z, yaw, _, _ = closest_aruco.getCoordinate()
             print(f"x:{x}, y:{y}, z:{z}, yaw:{yaw}")
             if x is None or y is None or z is None or yaw is None:
                 self.controller.setZeroVelocity()
                 continue
+            x_offset = aruco_setup[str(id)]["coordinate"]["x"]
+            y_offset = aruco_setup[str(id)]["coordinate"]["y"]
             diffrent_distance = math.sqrt(x**2 + y**2)
-            move_x = min(max(x, -max_distance), max_distance)
-            move_y = min(max(y, -max_distance), max_distance)
+            move_x = min(max(x-x_offset, -max_distance), max_distance)
+            move_y = min(max(y-y_offset, -max_distance), max_distance)
             move_yaw = min(max(yaw*3.14159/180, -max_yaw), max_yaw)
             if diffrent_distance < 0.1:  # 當無人機與平台的差距大於0.1公尺時停止
                 break
@@ -79,7 +85,7 @@ class Mission:
                 self.controller.sendPositionTargetPosition(
                     move_y,
                     -move_x,
-                    downWard_distance,
+                    downward_distance,
                     -move_yaw,
                 )
             else:
