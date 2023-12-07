@@ -33,9 +33,10 @@ def arucoLandingTest():
     node = rclpy.create_node("flight_control")
     controller = flight_control.FlightControl(node)
     flight_info = flight_control.FlightInfo(node)
-    while not controller.armAndTakeoff():
-        print("armAndTakeoff fail")
-    time.sleep(5)
+    # while not controller.armAndTakeoff():
+    #     print("armAndTakeoff fail")
+    # time.sleep(5)
+    controller.setMode('4')
     mission = Mission(controller,flight_info)
     mission.landedOnPlatform()
     controller.destroy()

@@ -301,10 +301,10 @@ if __name__ == "__main__":
     aruco_detector = ArucoDetector()
     while True:
         aruco = aruco_detector.closestAruco()
-        cv2.imshow("frame", aruco_detector.frame)
+        # cv2.imshow("frame", aruco_detector.frame)
         if aruco is not None:
             x, y, z, yaw, pitch, roll = aruco.getCoordinate()
             id = aruco.id
             print(f"id:{id}, x:{x}, y:{y}, z:{z}, yaw:{yaw}")
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+        # if cv2.waitKey(1) & 0xFF == ord("q"):
+        #     break

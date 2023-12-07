@@ -79,9 +79,9 @@ class Mission:
             move_x = min(max(x-x_offset, -max_distance), max_distance)
             move_y = min(max(y-y_offset, -max_distance), max_distance)
             move_yaw = min(max(yaw*3.14159/180, -max_yaw), max_yaw)
-            if diffrent_distance < 0.1:  # 當無人機與平台的差距大於0.1公尺時停止
+            if diffrent_distance < 0.1 and self.flight_info.rangefinder_alt<0.5:  # 當無人機與平台的差距大於0.1公尺時停止
                 break
-            if self.flight_info.rangefinder_alt < lowest_high:
+            if self.flight_info.rangefinder_alt > lowest_high:
                 self.controller.sendPositionTargetPosition(
                     move_y,
                     -move_x,
@@ -96,7 +96,7 @@ class Mission:
                     0,
                     -move_yaw,
                 )
-            time.sleep(1)
+            time.sleep(2)
         self.controller.setZeroVelocity()
         aruco_detector.stop()
         while not self.controller.land():
