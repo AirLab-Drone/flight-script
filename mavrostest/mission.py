@@ -84,7 +84,7 @@ class Mission:
             if self.flight_info.rangefinder_alt > lowest_high:
                 self.controller.sendPositionTargetPosition(
                     move_y,
-                    -move_x,
+                    move_x,
                     downward_distance,
                     -move_yaw,
                 )
@@ -92,7 +92,7 @@ class Mission:
                 # when high is lower than lowest_high, stop moving down
                 self.controller.sendPositionTargetPosition(
                     move_y,
-                    -move_x,
+                    move_x,
                     0,
                     -move_yaw,
                 )
