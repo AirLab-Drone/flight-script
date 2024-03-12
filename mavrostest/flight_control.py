@@ -35,7 +35,7 @@ class FlightControl:
     def sendPositionTargetVelocity(self, x, y, z, yaw_rate=0):
         """
         @param x: x-axis velocity in m/s, positive for forward, negative for backward
-        @param y: y-axis velocity in m/s, positive for right, negative for left
+        @param y: y-axis velocity in m/s, positive for left, negative for right
         @param z: z-axis velocity in m/s, positive for up, negative for down
         @param yaw_rate:CANNOT WORKING, yaw rate in rad/s, positive for clockwise, negative for counterclockwise
         傳送x,y,z軸的速度給飛控，單位為m/s。
@@ -44,9 +44,9 @@ class FlightControl:
         self.msg.velocity.y = float(y)
         self.msg.velocity.z = float(z)
         self.msg.yaw_rate = float(yaw_rate)
-        print(
-            f"x: {self.msg.velocity.x}, y: {self.msg.velocity.y}, z: {self.msg.velocity.z}, yaw_rate: {self.msg.yaw_rate}"
-        )
+        # print(
+        #     f"x: {self.msg.velocity.x}, y: {self.msg.velocity.y}, z: {self.msg.velocity.z}, yaw_rate: {self.msg.yaw_rate}"
+        # )
         self.publisher.publish(self.msg)
 
     def sendPositionTargetPosition(self, x, y, z, yaw=0):
@@ -54,16 +54,16 @@ class FlightControl:
         @param x: x-axis position in m, positive for forward, negative for backward
         @param y: y-axis position in m, positive for left, negative for right
         @param z: z-axis position in m, positive for up, negative for down
-        @param yaw: yaw in rad, positive for clockwise, negative for counterclockwise
+        @param yaw: yaw in rad, positive for counterclockwise, negative for clockwise
         傳送x,y,z軸的位置給飛控，單位為m。
         """
         self.msg.position.x = float(x)
         self.msg.position.y = float(y)
         self.msg.position.z = float(z)
         self.msg.yaw = float(yaw)
-        print(
-            f"x: {self.msg.position.x}, y: {self.msg.position.y}, z: {self.msg.position.z}, yaw: {self.msg.yaw}"
-        )
+        # print(
+        #     f"x: {self.msg.position.x}, y: {self.msg.position.y}, z: {self.msg.position.z}, yaw: {self.msg.yaw}"
+        # )
         self.publisher.publish(self.msg)
 
     def setInitPositionTarget(self):
@@ -131,7 +131,10 @@ class FlightControl:
         time.sleep(2)
         return True
 
-    def takeoff(self, alt=1.2):
+    def takeoff(self, alt=3.2):
+        if type(alt) != float:
+            alt = float(alt)
+        print('takeoff alt:', alt)
         takeoff_client = self.node.create_client(CommandTOL, "/mavros/cmd/takeoff")
         takeoff_request = CommandTOL.Request(altitude=alt)
         future_takeoff = takeoff_client.call_async(takeoff_request)
@@ -183,7 +186,7 @@ class FlightInfo:
         """
         Callback function for the rangefinder subscription.
         """
-        # print(msg.range)
+        print(f'rangefinder callback: {msg.range}')
         self.rangefinder_alt = msg.range
 
     def destroy(self):
@@ -196,11 +199,20 @@ class FlightInfo:
 
 if __name__ == "__main__":
     rclpy.init()
-    node_main = rclpy.create_node("flight_control")
+    node_main = rclpy.create_node("flight_control_test")
     controler = FlightControl(node_main)
-    while not controler.armAndTakeoff():
-        print("armAndTakeoff fail")
-    controler.sendPositionTargetPosition(1, 1, 1)
-    time.sleep(5)
-    while not controler.land():
-        print("setZeroVelocity fail")
+    info = FlightInfo(node_main)
+    rclpy.spin(node_main)
+    while True:
+        print(info.rangefinder_alt)
+        time.sleep(0.1)
+    # while not controler.armAndTakeoff():
+    #     print("armAndTakeoff fail")
+    # time.sleep(5)
+    # for i in range(5):
+    #     controler.sendPositionTargetPosition(0, 0, 0.5, 0)
+    #     time.sleep(1)
+
+    # time.sleep(15)
+    # while not controler.land():
+    #     print("setZeroVelocity fail")

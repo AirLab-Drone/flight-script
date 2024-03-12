@@ -17,7 +17,7 @@ def setVisionPositionEstimateMsg(x, y, z, pitch, roll, yaw, w):
     msg.pose.orientation.z = yaw
     msg.pose.orientation.w = w
     return msg
-def setPoseCovarianceMsg(x, y, z, pitch, roll, yaw):
+def setPoseCovarianceMsg(x, y, z, pitch, roll, yaw, w):
     msg = PoseWithCovarianceStamped()
     msg.header.stamp = node.get_clock().now().to_msg()
     msg.header.frame_id = 'map'
@@ -27,6 +27,8 @@ def setPoseCovarianceMsg(x, y, z, pitch, roll, yaw):
     msg.pose.pose.orientation.x = pitch
     msg.pose.pose.orientation.y = roll
     msg.pose.pose.orientation.z = yaw
+    msg.pose.pose.orientation.w = w
+
     return msg
 def odom_callback(msg):
     print(msg.pose.pose.position.x)
@@ -42,9 +44,16 @@ def odom_callback(msg):
 if __name__ == '__main__':
     rclpy.init()
     node = Node('vision_position_estimate')
-    pub = node.create_publisher(PoseStamped, '/mavros/vision_pose/pose', 10)
-    sub = node.create_subscription(Odometry, '/odom', odom_callback, 10)
+    pub = node.create_publisher(PoseWithCovarianceStamped, '/mavros/vision_pose/pose_cov', 10)
+    # pub = node.create_publisher(PoseStamped, '/mavros/vision_pose/pose', 10)
+    # sub = node.create_subscription(Odometry, '/odom', odom_callback, 10)
     rate = node.create_rate(10)
+    while rclpy.ok():
+        msg = setPoseCovarianceMsg(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+        print(msg)
+        pub.publish(msg)
+        rclpy.spin_once(node)
+        rate.sleep()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

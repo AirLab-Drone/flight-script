@@ -3,42 +3,14 @@ import time
 import rclpy
 from visual import ArucoDetector
 from flight_control import FlightControl, FlightInfo
+from tool.PID import PID
+import threading
 
 
 class Mission:
     def __init__(self, controller: FlightControl, flight_info: FlightInfo) -> None:
         self.controller = controller
         self.flight_info = flight_info
-
-    # def landedOnPlatform(self):
-    #     lowest_high = 0.3  # 最低可看到aruco的高度 單位:公尺
-    #     max_speed = 0.1  # 速度 單位:公尺/秒
-    #     downWard_speed = -0.1  # 下降速度 單位:公尺/秒
-    #     aruco_detector = ArucoDetector()
-    #     while True:
-    #         rclpy.spin_once(self.flight_info.node)
-    #         closest_aruco = aruco_detector.closestAruco()
-    #         if closest_aruco is None:
-    #             self.controller.setZeroVelocity()
-    #             continue
-    #         x, y, z, _, _, _ = closest_aruco.getCoordinate()
-    #         if x is None or y is None or z is None:
-    #             self.controller.setZeroVelocity()
-    #             continue
-    #         diffrent_distance = math.sqrt(x**2 + y**2)
-    #         if diffrent_distance < 0.1:  # 當無人機與平台的差距大於0.1公尺時停止
-    #             break
-    #         x_speed = x / diffrent_distance * max_speed  # todo 需調整aruco和無人機飛行方向一致
-    #         y_speed = y / diffrent_distance * max_speed
-    #         if self.flight_info.rangefinder_alt < lowest_high:
-    #             self.controller.sendPositionTargetVelocity(y_speed, x_speed, downWard_speed)
-    #         else:
-    #             # when high is lower than lowest_high, stop moving down
-    #             self.controller.sendPositionTargetVelocity(y_speed, x_speed, 0.0)
-    #     self.controller.setZeroVelocity()
-    #     is_land_success = False
-    #     while is_land_success is False:
-    #         is_land_success = self.controller.land()
 
     def landedOnPlatform(self):
         """
@@ -53,45 +25,86 @@ class Mission:
         Returns:
             None
         """
-        lowest_high = 0.3  # 最低可看到aruco的高度 單位:公尺
+        lowest_high = 1.2  # 最低可看到aruco的高度 單位:公尺
         max_distance = 0.2
+        max_speed = 0.8  # 速度 單位:公尺/秒
         max_yaw = 0.174  # 10度
         downWard_distance = -0.2  #
-        aruco_detector = ArucoDetector()
+        aruco_detector = ArucoDetector(video_source=1)
+        count = 0
+        max_count = 50
+        pid_x = PID(
+            4, 0, 3, 0, time=self.controller.node.get_clock().now().nanoseconds * 1e-9
+        )
+        pid_y = PID(
+            4, 0, 3, 0, time=self.controller.node.get_clock().now().nanoseconds * 1e-9
+        )
         while True:
             rclpy.spin_once(self.flight_info.node)
             closest_aruco = aruco_detector.closestAruco()
             if closest_aruco is None:
+                # count += 1
+                # if count > max_count:
+                #     self.controller.sendPositionTargetPosition(0, 0, 0.2, 0)
+                #     count = 0
                 self.controller.setZeroVelocity()
                 continue
             x, y, z, yaw, _, _ = closest_aruco.getCoordinate()
-            print(f"x:{x}, y:{y}, z:{z}, yaw:{yaw}")
             if x is None or y is None or z is None or yaw is None:
+                count += 1
+                # if count > max_count:
+                #     self.controller.sendPositionTargetPosition(0, 0, 0.2, 0)
+                #     count = 0
                 self.controller.setZeroVelocity()
                 continue
+            count = 0
+            # -------------------------------- PID control ------------------------------- #
+            # print(f'time:{self.controller.node.get_clock().now().nanoseconds}*1e-9')
+            move_x = -pid_x.PID(
+                x, self.controller.node.get_clock().now().nanoseconds * 1e-9
+            )
+            move_y = -pid_y.PID(
+                y, self.controller.node.get_clock().now().nanoseconds * 1e-9
+            )
+            # print(f"move_pid_x:{move_pid_x}, move_pid_y:{move_pid_y}")
+
             diffrent_distance = math.sqrt(x**2 + y**2)
-            move_x = min(max(x, -max_distance), max_distance)
-            move_y = min(max(y, -max_distance), max_distance)
-            move_yaw = min(max(yaw*3.14159/180, -max_yaw), max_yaw)
-            if diffrent_distance < 0.1:  # 當無人機與平台的差距大於0.1公尺時停止
+
+            # if diffrent_distance > 0.5:
+            #     move_x = x/diffrent_distance*max_speed
+            #     move_y = y/diffrent_distance*max_speed
+            # else:
+            #     move_x = x
+            #     move_y = y
+            move_x = min(max(x, -max_speed), max_speed)
+            move_y = min(max(y, -max_speed), max_speed)
+            move_yaw = min(max(yaw * 3.14159 / 180, -max_yaw), max_yaw)
+            if (
+                diffrent_distance < 0.05
+                and self.flight_info.rangefinder_alt < lowest_high
+            ):  # 當無人機與平台的差距大於0.1公尺時停止
                 break
-            if self.flight_info.rangefinder_alt < lowest_high:
-                self.controller.sendPositionTargetPosition(
-                    move_y,
+            # move_x = min(max(move_x, -max_speed), max_speed)
+            # move_y = min(max(move_y, -max_speed), max_speed)
+            if self.flight_info.rangefinder_alt > lowest_high:
+                self.controller.sendPositionTargetVelocity(
+                    -move_y,
                     -move_x,
                     downWard_distance,
                     -move_yaw,
                 )
             else:
-                # when high is lower than lowest_high, stop moving down
-                self.controller.sendPositionTargetPosition(
-                    move_y,
+                # when height is lower than lowest_high, stop moving down
+                self.controller.sendPositionTargetVelocity(
+                    -move_y,
                     -move_x,
                     0,
                     -move_yaw,
                 )
+            print(f"move_x:{move_x}, move_y:{move_y}, move_yaw:{move_yaw}")
             time.sleep(1)
         self.controller.setZeroVelocity()
         aruco_detector.stop()
+        print('now i want to land=================================')
         while not self.controller.land():
             print("landing")
