@@ -4,12 +4,12 @@ from cv_bridge import CvBridge
 import cv2
 
 class VideoCaptureFromRos2:
-    def __init__(self, path):
+    def __init__(self, path, node=None):
         #'/world/iris_runway/model/iris_with_ardupilot_camera/model/camera/linkcamera_link/sensor/camera1/image'
         if not rclpy.ok():
             rclpy.init()
         self.cv_image = None
-        self.node = rclpy.create_node('video_capture_from_ros2')
+        self.node = node if node is not None else rclpy.create_node('video_capture_from_ros2')
         self.image_sub = self.node.create_subscription(Image, path, self.image_callback, 10)
     def image_callback(self, msg):
         self.cv_image = CvBridge().imgmsg_to_cv2(msg, "bgr8")

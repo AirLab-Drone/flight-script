@@ -201,18 +201,10 @@ if __name__ == "__main__":
     rclpy.init()
     node_main = rclpy.create_node("flight_control_test")
     controler = FlightControl(node_main)
-    info = FlightInfo(node_main)
-    rclpy.spin(node_main)
-    while True:
-        print(info.rangefinder_alt)
-        time.sleep(0.1)
-    # while not controler.armAndTakeoff():
-    #     print("armAndTakeoff fail")
-    # time.sleep(5)
-    # for i in range(5):
-    #     controler.sendPositionTargetPosition(0, 0, 0.5, 0)
-    #     time.sleep(1)
-
-    # time.sleep(15)
-    # while not controler.land():
-    #     print("setZeroVelocity fail")
+    while not controler.armAndTakeoff(alt=2):
+        print("armAndTakeoff fail")
+    time.sleep(5)
+    controler.sendPositionTargetPosition(0, 0, 0, 90*3.14159/180)
+    controler.sendPositionTargetPosition(0, 0, 0, 90*3.14159/180)
+    controler.sendPositionTargetPosition(0, 0, 0, 90*3.14159/180)
+    controler.sendPositionTargetPosition(0, 0, 0, 90*3.14159/180)

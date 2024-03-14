@@ -5,7 +5,6 @@ import json
 import math
 import os
 import threading
-from tool.video_capture_from_ros2 import VideoCaptureFromRos2
 
 
 class LimitedList:
@@ -34,20 +33,26 @@ class LimitedList:
 
 class Aruco:
     mtx = np.array(
-        [[776.31000562, 0, 327.96638128], [0, 775.07173891, 179.57551958], [0, 0, 1]]
-    )
-    dist = np.array(
+        # [[776.31000562, 0, 327.96638128], [0, 775.07173891, 179.57551958], [0, 0, 1]]
         [
-            [
-                8.29378271e-02,
-                1.26989092e-01,
-                3.86532147e-03,
-                1.18462078e-03,
-                -1.87627090e00,
-            ]
+            [405.19622214, 0.00000000e00, 340],
+            [0.00000000e00, 405.19622214, 240],
+            [0.00000000e00, 0.00000000e00, 1.00000000e00],
         ]
     )
-    markerLength = 0.0585  # unit: meter
+    dist = np.array(
+        # [
+        #     [
+        #         8.29378271e-02,
+        #         1.26989092e-01,
+        #         3.86532147e-03,
+        #         1.18462078e-03,
+        #         -1.87627090e00,
+        #     ]
+        # ]
+        [[0, 0, 0, 0, 0]]
+    )
+    markerLength = 0.16  # unit: meter
     limit_list_size = 5
 
     # markerLength = 0.0385
@@ -74,8 +79,7 @@ class Aruco:
 
     def estimatePoseSingleMarkers(self, corner):
         rvec, tvec, markerPoints = cv2.aruco.estimatePoseSingleMarkers(
-            corner, self.markerLength, self.mtx, self.dist
-        )
+            corner, self.markerLength, self.mtx, self.dist)
         self.rvec = rvec
         self.tvec = tvec
         yaw, pitch, roll = self.rvec_to_euler_angles(rvec)
@@ -150,13 +154,14 @@ class ArucoDetector:
     # DRAWARUCO = True
     is_running = True
 
-    def __init__(self, video_source=0):
-        if video_source == 0:
-            self.cap = cv2.VideoCapture(0)
-        elif video_source == 1:
-            self.cap = VideoCaptureFromRos2(
-                "/world/iris_runway/model/iris_with_ardupilot_camera/model/camera/link/camera_link/sensor/camera1/image"
-            )
+    def __init__(self, video_source=cv2.VideoCapture(0)):
+        # if video_source == 0:
+        #     self.cap = cv2.VideoCapture(0)
+        # elif video_source == 1:
+        #     self.cap = VideoCaptureFromRos2(
+        #         "/world/iris_runway/model/iris_with_ardupilot_camera/model/camera/link/camera_link/sensor/camera1/image"
+        #     )
+        self.cap = video_source
         self.arucoList = []
         self.count = 0
         self.start_time = cv2.getTickCount()
@@ -194,6 +199,7 @@ class ArucoDetector:
                     id = aruco.id
                     aruco.update(id, corners[np.where(ids == aruco.id)[0][0]])
             # self.debug()
+
     def stop(self):
         self.is_running = False
         self.cap.release()
@@ -208,6 +214,9 @@ class ArucoDetector:
             # for aruco in arucoList:
             #     print(aruco.id,aruco.getCoordinate())
             self.start_time = cv2.getTickCount()
+        # ------------------------------- aruco status ------------------------------- #
+        if len(self.arucoList) > 0:
+            print(len(self.arucoList[0].x_list.items))
 
     def closestAruco(self) -> Aruco | None:
         closest_aruco = None
@@ -263,17 +272,32 @@ class ArucoDetector:
 
 if __name__ == "__main__":
     import rclpy
-
+    from tool.video_capture_from_ros2 import VideoCaptureFromRos2
+    import time
     rclpy.init()
-
-
-
-
-    aruco_detector = ArucoDetector(video_source=1)
+    aruconode = rclpy.create_node("aruco_detector")
+    aruco_detector = ArucoDetector(
+        video_source=VideoCaptureFromRos2(
+            "/world/iris_runway/model/camera/link/camera_link/sensor/camera1/image",
+            node=aruconode,
+        )
+    )
     while True:
         aruco = aruco_detector.closestAruco()
-        cv2.imshow("Image", aruco_detector.frame)
-        cv2.waitKey(1)
+        # try:
+        #     cv2.imshow("Image", aruco_detex, y, z, yaw, _, _ = aruco.getCoordinate()ctor.frame)
+        #     cv2.waitKey(1)
+        # except:
+        #     pass
         # print(aruco_detector.frame)
         if aruco != None:
-            print(aruco.getCoordinate())
+            x, y, z, yaw, _, _ = aruco.getCoordinate()
+            print(x, y, z, yaw)
+        else:
+            if(len(aruco_detector.arucoList) > 0):
+                print(aruco_detector.arucoList[0].x_list.items)
+            print("no aruco")
+            # cv2.imshow("Image", aruco_detector.frame)
+            # cv2.waitKey(1)
+            pass
+        time.sleep(0.1)
